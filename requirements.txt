@@ -9,3 +9,5 @@ gTTS
 PyAudio
 langchain-groq
 langchain_groq
+portaudio19-dev
+python3-all-dev
