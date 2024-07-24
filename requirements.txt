@@ -8,4 +8,4 @@ langchain-community
 gTTS
 langchain-groq
 langchain_groq
-
+duckduckgo-search
