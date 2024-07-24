@@ -6,9 +6,6 @@ SpeechRecognition
 beautifulsoup4
 langchain-community
 gTTS
-PyAudio
 langchain-groq
 langchain_groq
-portaudio19-dev
-python3-all-dev
-libportaudio2=19.6.0-3.1
+
