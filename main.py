@@ -1,17 +1,14 @@
 import os
 import streamlit as st
-import speech_recognition as sr
 from langchain_groq import ChatGroq
 from langchain_community.tools import DuckDuckGoSearchResults
 from bs4 import BeautifulSoup
 import requests
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate
-from gtts import gTTS
-from io import BytesIO
 
 # Streamlit configs
-st.set_page_config(page_title="AI Voice Assistant", page_icon="🎙️")
+st.set_page_config(page_title="AI Text Assistant", page_icon="🤖")
 
 # Get Groq API key from environment variable
 groq_api_key = os.getenv("GROQ_API_KEY")
@@ -46,15 +43,8 @@ def search_and_summarize(query, groq_llm):
     chain = prompt | groq_llm
     return chain.invoke({"content": extracted_content})
 
-# Function to convert text to speech
-def text_to_speech(text):
-    tts = gTTS(text=text, lang='en')
-    fp = BytesIO()
-    tts.write_to_fp(fp)
-    return fp
-
 # Streamlit UI
-st.title("AI-powered Voice Assistant")
+st.title("AI-powered Text Assistant")
 
 # Initialize StreamlitChatMessageHistory
 history = StreamlitChatMessageHistory(key="chat_messages")
@@ -62,31 +52,22 @@ history = StreamlitChatMessageHistory(key="chat_messages")
 if groq_api_key:
     groq_llm = initialize_groq_llm()
 
-    # Voice input button
-    if st.button("Start Voice Input"):
-        r = sr.Recognizer()
-        with sr.Microphone() as source:
-            st.write("Listening...")
-            audio = r.listen(source)
-            try:
-                user_input = r.recognize_google(audio)
-                st.write(f"You said: {user_input}")
-                # Process user input
-                response = search_and_summarize(user_input, groq_llm)
-                # Add messages to history
-                history.add_user_message(user_input)
-                history.add_ai_message(response.content)
-                # Convert response to speech
-                audio_fp = text_to_speech(response.content)
-                st.audio(audio_fp)
-            except sr.UnknownValueError:
-                st.write("Sorry, I couldn't understand that.")
-            except sr.RequestError:
-                st.write("Sorry, there was an error processing your request.")
+    # Text input
+    user_input = st.text_input("Ask me anything:")
+    if user_input:
+        # Process user input
+        response = search_and_summarize(user_input, groq_llm)
+        # Add messages to history
+        history.add_user_message(user_input)
+        history.add_ai_message(response.content)
+        
+        # Display the latest response
+        st.write("Assistant:", response.content)
 
     # Display chat history
+    st.write("Chat History:")
     for message in history.messages:
-        st.chat_message(message.type).write(message.content)
+        st.write(f"{message.type.capitalize()}: {message.content}")
 
 else:
     st.error("Groq API key not found in environment variables. Please set the GROQ_API_KEY secret in your Repl.it environment.")
