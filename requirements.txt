@@ -1,0 +1,11 @@
+streamlit
+langchain-core
+pyttsx3
+requests
+SpeechRecognition
+beautifulsoup4
+langchain-community
+gTTS
+PyAudio
+langchain-groq
+langchain_groq

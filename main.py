@@ -5,9 +5,10 @@ from langchain_groq import ChatGroq
 from langchain_community.tools import DuckDuckGoSearchResults
 from bs4 import BeautifulSoup
 import requests
-import pyttsx3
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate
+from gtts import gTTS
+from io import BytesIO
 
 # Streamlit configs
 st.set_page_config(page_title="AI Voice Assistant", page_icon="🎙️")
@@ -31,7 +32,6 @@ search_tool = DuckDuckGoSearchResults()
 def extract_content(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
-    # Extract relevant content (customize this based on your needs)
     content = soup.get_text()
     return content[:500]  # Limiting to 500 characters for brevity
 
@@ -46,10 +46,12 @@ def search_and_summarize(query, groq_llm):
     chain = prompt | groq_llm
     return chain.invoke({"content": extracted_content})
 
-# Initialize text-to-speech engine
-@st.cache_resource
-def initialize_tts_engine():
-    return pyttsx3.init()
+# Function to convert text to speech
+def text_to_speech(text):
+    tts = gTTS(text=text, lang='en')
+    fp = BytesIO()
+    tts.write_to_fp(fp)
+    return fp
 
 # Streamlit UI
 st.title("AI-powered Voice Assistant")
@@ -59,7 +61,6 @@ history = StreamlitChatMessageHistory(key="chat_messages")
 
 if groq_api_key:
     groq_llm = initialize_groq_llm()
-    tts_engine = initialize_tts_engine()
 
     # Voice input button
     if st.button("Start Voice Input"):
@@ -70,18 +71,14 @@ if groq_api_key:
             try:
                 user_input = r.recognize_google(audio)
                 st.write(f"You said: {user_input}")
-
                 # Process user input
                 response = search_and_summarize(user_input, groq_llm)
-
                 # Add messages to history
                 history.add_user_message(user_input)
                 history.add_ai_message(response.content)
-
                 # Convert response to speech
-                tts_engine.say(response.content)
-                tts_engine.runAndWait()
-
+                audio_fp = text_to_speech(response.content)
+                st.audio(audio_fp)
             except sr.UnknownValueError:
                 st.write("Sorry, I couldn't understand that.")
             except sr.RequestError:
@@ -90,5 +87,6 @@ if groq_api_key:
     # Display chat history
     for message in history.messages:
         st.chat_message(message.type).write(message.content)
+
 else:
     st.error("Groq API key not found in environment variables. Please set the GROQ_API_KEY secret in your Repl.it environment.")
